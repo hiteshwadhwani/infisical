@@ -1,31 +1,44 @@
 import { TDbClient } from "@app/db";
-import { TableName, TUserSecretCredentialsUpdate } from "@app/db/schemas";
+import {
+  TableName,
+  TUserSecretCredentialsInsert,
+  TUserSecretCredentialsUpdate,
+  TUserSecretsInsert
+} from "@app/db/schemas";
 import { DatabaseError } from "@app/lib/errors";
 import { ormify } from "@app/lib/knex";
 
-import { CreateSecretDALParamsType, GetSecretReturnType } from "./user-secrets-types";
+import { GetSecretReturnType } from "./user-secrets-types";
 
 export type TUserSecretsDALFactory = ReturnType<typeof userSecretsDALFactory>;
 
 export const userSecretsDALFactory = (db: TDbClient) => {
+  const userSecretsOrm = ormify(db, TableName.UserSecrets);
   const userSecretCredentialsOrm = ormify(db, TableName.UserSecretCredentials);
 
-  const createSecret = async (data: CreateSecretDALParamsType) => {
+  const createIfNotExistsUserSecret = async (data: TUserSecretsInsert) => {
     try {
-      let orgSecrets = await db(TableName.UserSecrets)
-        .where({ orgId: data.orgId, userId: data.userId })
-        .first()
-        .select("id");
-      if (!orgSecrets?.id) {
-        orgSecrets = await db(TableName.UserSecrets).insert({ orgId: data.orgId, userId: data.userId }).returning("id");
+      let userSecret = await userSecretsOrm.findOne({
+        orgId: data.orgId,
+        userId: data.userId
+      });
+      if (!userSecret) {
+        userSecret = await userSecretsOrm.create(data);
       }
+      return userSecret;
+    } catch (error) {
+      throw new DatabaseError({ error, message: "Error creating user secret" });
+    }
+  };
 
+  const createCredentials = async (data: TUserSecretCredentialsInsert) => {
+    try {
       await userSecretCredentialsOrm.insertMany([
         {
           credentialType: data.credentialType,
           title: data.title,
           fields: data.fields,
-          secretId: orgSecrets?.id as unknown as string
+          secretId: data.secretId
         }
       ]);
     } catch (error) {
@@ -33,7 +46,7 @@ export const userSecretsDALFactory = (db: TDbClient) => {
     }
   };
 
-  const getSecrets = async (orgId: string, userId: string): Promise<GetSecretReturnType[] | void> => {
+  const getCredentials = async (orgId: string, userId: string): Promise<GetSecretReturnType[] | void> => {
     try {
       const secrets = await db(TableName.UserSecrets)
         .where({ orgId, userId })
@@ -49,7 +62,7 @@ export const userSecretsDALFactory = (db: TDbClient) => {
     }
   };
 
-  const updateSecrets = async (recordId: string, data: TUserSecretCredentialsUpdate) => {
+  const updateCredentialsById = async (recordId: string, data: TUserSecretCredentialsUpdate) => {
     try {
       await db(TableName.UserSecretCredentials).update(data).where({ id: recordId });
     } catch (error) {
@@ -57,7 +70,7 @@ export const userSecretsDALFactory = (db: TDbClient) => {
     }
   };
 
-  const deleteSecret = async (recordId: string) => {
+  const deleteCredentialsById = async (recordId: string) => {
     try {
       await db(TableName.UserSecretCredentials).delete().where({ id: recordId });
     } catch (error) {
@@ -65,7 +78,7 @@ export const userSecretsDALFactory = (db: TDbClient) => {
     }
   };
 
-  const getSecretByCredentialType = async (orgId: string, userId: string, credentialType: string) => {
+  const getCredentialsByCredentialType = async (orgId: string, userId: string, credentialType: string) => {
     try {
       const secret = await db(TableName.UserSecrets)
         .where({ orgId, userId })
@@ -83,10 +96,11 @@ export const userSecretsDALFactory = (db: TDbClient) => {
   };
 
   return {
-    createSecret,
-    getSecrets,
-    updateSecrets,
-    deleteSecret,
-    getSecretByCredentialType
+    createIfNotExistsUserSecret,
+    createCredentials,
+    getCredentials,
+    updateCredentialsById,
+    deleteCredentialsById,
+    getCredentialsByCredentialType
   };
 };

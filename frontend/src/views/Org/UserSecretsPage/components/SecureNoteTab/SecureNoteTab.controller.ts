@@ -139,7 +139,7 @@ export const useUserSecretNodeTab = () => {
           });
         }
       },
-      submitText: "Create"
+      submitText: "Update"
     };
   };
 

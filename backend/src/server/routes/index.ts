@@ -355,7 +355,7 @@ export const registerRoutes = async (
     projectDAL
   });
 
-  const userSecretsService = userSecretsServiceFactory({ userSecretsDAL, kmsService });
+  const userSecretsService = userSecretsServiceFactory({ userSecretsDAL, kmsService, permissionService });
 
   const externalKmsService = externalKmsServiceFactory({
     kmsDAL,

@@ -142,7 +142,7 @@ export const useCreditCardTab = () => {
           });
         }
       },
-      submitText: "Create"
+      submitText: "Update"
     }
   };
   

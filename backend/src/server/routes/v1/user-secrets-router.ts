@@ -3,6 +3,7 @@ import { z } from "zod";
 import { readLimit } from "@app/server/config/rateLimiter";
 import { verifyAuth } from "@app/server/plugins/auth/verify-auth";
 import { AuthMode } from "@app/services/auth/auth-type";
+import { TCheckUserPermissions } from "@app/services/user-secrets/user-secrets-types";
 
 export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
   server.route({
@@ -18,6 +19,7 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
       }),
       response: {
         200: z.object({
+          status: z.string(),
           secrets: z.array(
             z.object({
               id: z.string(),
@@ -30,9 +32,16 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
     },
     onRequest: verifyAuth([AuthMode.JWT]),
     handler: async (req) => {
-      const { orgId, id } = req.permission;
-      const secrets = await server.services.userSecrets.getSecrets(orgId, id, req.query.credentialType);
+      const userData: TCheckUserPermissions = {
+        actor: req.permission.type,
+        actorId: req.permission.id,
+        actorAuthMethod: req.permission.authMethod,
+        actorOrgId: req.permission.orgId,
+        orgId: req.permission.orgId
+      };
+      const secrets = await server.services.userSecrets.getUserCredentials(userData, req.query.credentialType);
       return {
+        status: "success",
         secrets
       };
     }
@@ -52,19 +61,25 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
         fields: z.record(z.string(), z.string())
       }),
       response: {
-        200: z.boolean()
+        200: z.object({
+          status: z.string()
+        })
       }
     },
     onRequest: verifyAuth([AuthMode.JWT]),
     handler: async (req) => {
-      try {
-        const { orgId, id } = req.permission;
-        await server.services.userSecrets.createSecrets({ orgId, userId: id, ...req.body });
-        return true;
-      } catch (error) {
-        server.log.error(error);
-        return false;
-      }
+      const userData: TCheckUserPermissions = {
+        actor: req.permission.type,
+        actorId: req.permission.id,
+        actorAuthMethod: req.permission.authMethod,
+        actorOrgId: req.permission.orgId,
+        orgId: req.permission.orgId
+      };
+
+      await server.services.userSecrets.createUserCredentials({ ...userData, ...req.body });
+      return {
+        status: "success"
+      };
     }
   });
 
@@ -79,18 +94,24 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
         id: z.string()
       }),
       response: {
-        200: z.boolean()
+        200: z.object({
+          status: z.string()
+        })
       }
     },
     onRequest: verifyAuth([AuthMode.JWT]),
     handler: async (req) => {
-      try {
-        await server.services.userSecrets.deleteSecret(req.query.id);
-        return true;
-      } catch (error) {
-        server.log.error(error);
-        return false;
-      }
+      const userData: TCheckUserPermissions = {
+        actor: req.permission.type,
+        actorId: req.permission.id,
+        actorAuthMethod: req.permission.authMethod,
+        actorOrgId: req.permission.orgId,
+        orgId: req.permission.orgId
+      };
+      await server.services.userSecrets.deleteCredentialsById(req.query.id, userData);
+      return {
+        status: "success"
+      };
     }
   });
 
@@ -106,18 +127,24 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
         fields: z.record(z.string(), z.string())
       }),
       response: {
-        200: z.boolean()
+        200: z.object({
+          status: z.string()
+        })
       }
     },
     onRequest: verifyAuth([AuthMode.JWT]),
     handler: async (req) => {
-      try {
-        await server.services.userSecrets.updateSecrets(req.body.id, req.body.fields);
-        return true;
-      } catch (error) {
-        server.log.error(error);
-        return false;
-      }
+      const userData: TCheckUserPermissions = {
+        actor: req.permission.type,
+        actorId: req.permission.id,
+        actorAuthMethod: req.permission.authMethod,
+        actorOrgId: req.permission.orgId,
+        orgId: req.permission.orgId
+      };
+      await server.services.userSecrets.updateUserCredentialById(req.body.id, req.body.fields, userData);
+      return {
+        status: "success"
+      };
     }
   });
 };

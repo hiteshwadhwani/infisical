@@ -143,7 +143,7 @@ export const useWebLoginTabController = () => {
           });
         }
       },
-      submitText: "Create"
+      submitText: "Update"
     };
   };
 
