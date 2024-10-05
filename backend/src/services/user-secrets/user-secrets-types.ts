@@ -8,6 +8,10 @@ export enum CredentialTypes {
 
 export type GetSecretReturnType = TUserSecrets & TUserSecretCredentials;
 
+export type TransformCredentialsToBusinessLogicType = Omit<GetSecretReturnType, "fields"> & {
+  fields: Record<string, string>;
+};
+
 export type CreateSecretDALParamsType = Omit<TUserSecretCredentialsInsert, "secretId"> & {
   userId: string;
   orgId: string;

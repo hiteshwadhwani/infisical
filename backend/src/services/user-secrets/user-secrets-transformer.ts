@@ -1,5 +1,4 @@
-import { decryptFields } from "./user-secrets.helpers";
-import { CredentialTypes, GetSecretReturnType } from "./user-secrets-types";
+import { CredentialTypes, TransformCredentialsToBusinessLogicType } from "./user-secrets-types";
 
 const getFormatedDate = (createdAt: Date) => {
   const date = new Date(createdAt);
@@ -53,13 +52,12 @@ const getTransformedField = (field: Record<string, string>, createdAt: Date, cre
   }
 };
 
-export const transformToWebLoginSecretApiResponse = (secrets: GetSecretReturnType[]) => {
+export const transformUserCredentialsToBusinessLogic = (secrets: TransformCredentialsToBusinessLogicType[]) => {
   return secrets.map((secret) => {
-    const decryptedFields = decryptFields(secret.fields);
     return {
       id: secret.id,
       title: secret.title,
-      fields: getTransformedField(decryptedFields, secret.createdAt, secret.credentialType)
+      fields: getTransformedField(secret.fields, secret.createdAt, secret.credentialType)
     };
   });
 };

@@ -338,8 +338,6 @@ export const registerRoutes = async (
 
   const userSecretsDAL = userSecretsDALFactory(db);
 
-  const userSecretsService = userSecretsServiceFactory({ userSecretsDAL });
-
   const permissionService = permissionServiceFactory({
     permissionDAL,
     orgRoleDAL,
@@ -356,6 +354,9 @@ export const registerRoutes = async (
     orgDAL,
     projectDAL
   });
+
+  const userSecretsService = userSecretsServiceFactory({ userSecretsDAL, kmsService });
+
   const externalKmsService = externalKmsServiceFactory({
     kmsDAL,
     kmsService,
