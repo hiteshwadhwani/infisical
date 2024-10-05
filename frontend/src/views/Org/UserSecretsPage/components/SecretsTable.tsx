@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { faEdit, faEye, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faEye, faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import {
+  EmptyState,
   IconButton,
   Table,
   TableContainer,
@@ -29,11 +30,11 @@ const SecretsTable = (props: Props) => {
   const [showSecretId, setShowSecretId] = useState<string>("");
 
   const onCLickShow = (id: string) => {
-    setShowSecretId(id)
+    setShowSecretId(id);
     setTimeout(() => {
-      setShowSecretId("")
+      setShowSecretId("");
     }, 3000);
-  }
+  };
 
   return (
     <TableContainer>
@@ -44,8 +45,8 @@ const SecretsTable = (props: Props) => {
               <Th key={column}>{column}</Th>
             ))}
             <Th aria-label="button" className="w-5" />
-            {onEdit && (<Th aria-label="button" className="w-5" />)}
-            {onDelete && (<Th aria-label="button" className="w-5" />)}
+            {onEdit && <Th aria-label="button" className="w-5" />}
+            {onDelete && <Th aria-label="button" className="w-5" />}
           </Tr>
         </THead>
         <TBody>
@@ -57,30 +58,29 @@ const SecretsTable = (props: Props) => {
                 className="h-10 cursor-pointer transition-colors duration-300 hover:bg-mineshaft-700"
               >
                 {Object.values(secret.fields).map((value, i) => {
-                  if(showSecretId === secret.id){
+                  if (showSecretId === secret.id) {
                     return (
                       // eslint-disable-next-line
                       <Td key={`secret-${value}-${i}`}>{value}</Td>
-                    )
+                    );
                   }
-                  
-                    return (
-                      (
-                        // eslint-disable-next-line
-                        <Td key={`secret-${value}-${i}`} className="blur">xxxxxxx</Td>
-                      )
-                    )
-                  
+
+                  return (
+                    // eslint-disable-next-line
+                    <Td key={`secret-${value}-${i}`} className="blur">
+                      xxxxxxx
+                    </Td>
+                  );
                 })}
                 <Td>
                   <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCLickShow(secret.id)
-                      }}
-                      variant="plain"
-                      ariaLabel="edit"
-                    >
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onCLickShow(secret.id);
+                    }}
+                    variant="plain"
+                    ariaLabel="edit"
+                  >
                     <FontAwesomeIcon icon={faEye} />
                   </IconButton>
                 </Td>
@@ -116,6 +116,7 @@ const SecretsTable = (props: Props) => {
             ))}
         </TBody>
       </Table>
+      {!isLoading && secrets?.length === 0 && <EmptyState title="No secrets found" icon={faKey} />}
     </TableContainer>
   );
 };

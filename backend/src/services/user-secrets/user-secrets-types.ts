@@ -30,3 +30,17 @@ export type TCheckUserPermissions = {
   actorOrgId: string;
   orgId: string;
 };
+
+export type TselectQueryOptionalParams = {
+  credentialType?: string;
+  limit?: number;
+  offset?: number;
+  orderBy?: {
+    column: string;
+    order?: "asc" | "desc";
+  };
+};
+
+export type TGetUserCredentialsOptionalParams = Omit<TselectQueryOptionalParams, "orderBy"> & {
+  orderBy?: string;
+};

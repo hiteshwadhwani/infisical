@@ -8,7 +8,12 @@ import {
 import { DatabaseError } from "@app/lib/errors";
 import { ormify } from "@app/lib/knex";
 
-import { GetSecretReturnType } from "./user-secrets-types";
+import {
+  DEFAULT_SELECT_QUERY_LIMIT,
+  DEFAULT_SELECT_QUERY_OFFSET,
+  DEFAULT_SELECT_QUERY_ORDER_BY
+} from "./user-secrets-constants";
+import { GetSecretReturnType, TselectQueryOptionalParams } from "./user-secrets-types";
 
 export type TUserSecretsDALFactory = ReturnType<typeof userSecretsDALFactory>;
 
@@ -46,17 +51,36 @@ export const userSecretsDALFactory = (db: TDbClient) => {
     }
   };
 
-  const getCredentials = async (orgId: string, userId: string): Promise<GetSecretReturnType[] | void> => {
+  const getCredentials = async (
+    orgId: string,
+    userId: string,
+    optionalParams?: TselectQueryOptionalParams
+  ): Promise<GetSecretReturnType[] | void> => {
     try {
-      const secrets = await db(TableName.UserSecrets)
+      const limitQueryString = optionalParams?.limit ?? (DEFAULT_SELECT_QUERY_LIMIT as number);
+      const offsetQueryString = optionalParams?.offset ?? (DEFAULT_SELECT_QUERY_OFFSET as number);
+      const orderByKeyQueryString = `${TableName.UserSecretCredentials}.${
+        optionalParams?.orderBy?.column ?? DEFAULT_SELECT_QUERY_ORDER_BY?.column
+      }`;
+      const orderByDirectionQueryString =
+        optionalParams?.orderBy?.order ?? (DEFAULT_SELECT_QUERY_ORDER_BY?.order as string);
+      const secrets: GetSecretReturnType[] = await db(TableName.UserSecrets)
         .where({ orgId, userId })
         .join(
           TableName.UserSecretCredentials,
           `${TableName.UserSecrets}.id`,
           `${TableName.UserSecretCredentials}.secretId`
         )
+        .modify((queryBuilder) => {
+          if (optionalParams?.credentialType) {
+            void queryBuilder.where({ credentialType: optionalParams.credentialType });
+          }
+        })
+        .orderBy(orderByKeyQueryString, orderByDirectionQueryString)
+        .limit(limitQueryString)
+        .offset(offsetQueryString)
         .select(`${TableName.UserSecrets}.*`, `${TableName.UserSecretCredentials}.*`);
-      return secrets as GetSecretReturnType[];
+      return secrets;
     } catch (error) {
       throw new DatabaseError({ error, message: "Error getting secrets" });
     }

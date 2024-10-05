@@ -3,8 +3,13 @@ import { TPermissionServiceFactory } from "@app/ee/services/permission/permissio
 
 import { TKmsServiceFactory } from "../kms/kms-service";
 import { TUserSecretsDALFactory } from "./user-secrets-dal";
+import { getOrderByFromQueryParams } from "./user-secrets-helpers";
 import { transformUserCredentialsToBusinessLogic } from "./user-secrets-transformer";
-import { CreateSecretFuncParamsType, TCheckUserPermissions } from "./user-secrets-types";
+import {
+  CreateSecretFuncParamsType,
+  TCheckUserPermissions,
+  TGetUserCredentialsOptionalParams
+} from "./user-secrets-types";
 
 type TUserSecretsServiceFactoryDep = {
   userSecretsDAL: TUserSecretsDALFactory;
@@ -57,16 +62,23 @@ export const userSecretsServiceFactory = ({
     });
   };
 
-  const getUserCredentials = async (userData: TCheckUserPermissions, credentialType?: string) => {
+  const getUserCredentials = async (
+    userData: TCheckUserPermissions,
+    optionalParams: TGetUserCredentialsOptionalParams
+  ) => {
     // check user permissions
     const hasPermission = await checkUserPermission({ ...userData });
     if (!hasPermission) {
       throw new Error("User does not have permission to get secrets");
     }
     const { orgId, actorId: userId } = userData;
-    const secrets = credentialType
-      ? await userSecretsDAL.getCredentialsByCredentialType(orgId, userId, credentialType)
-      : await userSecretsDAL.getCredentials(orgId, userId);
+
+    const optioanlDbQueryParams = {
+      ...optionalParams,
+      orderBy: optionalParams.orderBy ? getOrderByFromQueryParams(optionalParams.orderBy) : undefined
+    };
+
+    const secrets = await userSecretsDAL.getCredentials(orgId, userId, optioanlDbQueryParams);
     if (!secrets) return [];
     const decryptedSecrets = secrets.map((secret) => {
       const decryptedFields = decryptWithRoot(Buffer.from(secret.fields, "base64"));

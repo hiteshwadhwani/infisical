@@ -15,7 +15,10 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
     schema: {
       params: z.object({}),
       querystring: z.object({
-        credentialType: z.string().optional()
+        credentialType: z.string().optional(),
+        limit: z.number().optional(),
+        offset: z.number().optional(),
+        orderBy: z.string().optional()
       }),
       response: {
         200: z.object({
@@ -39,7 +42,13 @@ export const registerUserSecretsRouter = async (server: FastifyZodProvider) => {
         actorOrgId: req.permission.orgId,
         orgId: req.permission.orgId
       };
-      const secrets = await server.services.userSecrets.getUserCredentials(userData, req.query.credentialType);
+      const optionalParams = {
+        credentialType: req.query.credentialType,
+        limit: req.query.limit,
+        offset: req.query.offset,
+        orderBy: req.query.orderBy
+      };
+      const secrets = await server.services.userSecrets.getUserCredentials(userData, optionalParams);
       return {
         status: "success",
         secrets
